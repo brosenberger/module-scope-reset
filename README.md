@@ -1,6 +1,6 @@
 # BroCode_ScopeReset
 
-Restore store-view attribute inheritance over the Magento 2 REST API by sending the CSV importer's empty-value constant.
+Restore store-view attribute inheritance for **products and categories** over the Magento 2 REST API by sending the CSV importer's empty-value constant.
 
 ## The problem
 
@@ -22,16 +22,21 @@ That last row is the one that rots quietly. Six months later somebody edits the 
 Sending Magento's own empty-value constant as an attribute value at store scope deletes the store-scoped row, exactly as the admin checkbox does.
 
 ```bash
-# restore inheritance for a first-class field
+# a product's first-class field
 curl -s -X PUT "$BASE/rest/zurich_view/V1/products/ERP-1001" \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"product":{"sku":"ERP-1001","name":"__EMPTY__VALUE__"}}'
 
-# ...or for an EAV attribute
+# ...or an EAV attribute
 curl -s -X PUT "$BASE/rest/zurich_view/V1/products/ERP-1001" \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"product":{"sku":"ERP-1001","custom_attributes":[
         {"attribute_code":"description","value":"__EMPTY__VALUE__"}]}}'
+
+# categories work the same way
+curl -s -X PUT "$BASE/rest/zurich_view/V1/categories/42" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"category":{"id":42,"name":"__EMPTY__VALUE__"}}'
 ```
 
 The sentinel is **not** hardcoded. It is read from `Magento\ImportExport\Model\Import::DEFAULT_EMPTY_ATTRIBUTE_VALUE_CONSTANT`, which is `__EMPTY__VALUE__` on a default install — the same value the CSV importer already accepts, so an integration only learns one magic string whichever way it loads data.
@@ -73,13 +78,33 @@ bin/magento setup:upgrade
 bin/magento cache:flush && bin/magento setup:di:compile
 ```
 
-## Scope
+## Why categories hook somewhere else
 
-Products only. Categories and customers have the same inheritance problem and are not covered — the plugin point differs per repository, and shipping an untested one would be worse than shipping none.
+Worth knowing if you extend this, because the obvious seam is wrong.
+
+The product plugin sits on `ProductRepositoryInterface::save()`. The category plugin **cannot**: `CategoryRepository::save()` serialises the incoming object with `toNestedArray()`, then *replaces* it with a freshly loaded one and repopulates that from the array. Anything a repository-level plugin sets is discarded — and discarded inconsistently, because the serialiser drops a `null` while carrying a `false` through to be written as a `NULL` row. Both failure modes return `200`.
+
+So the category plugin hooks `Magento\Catalog\Model\ResourceModel\Category::save()` instead, where the entity is final and its original data is loaded — which is what the EAV layer needs in order to *delete* the row rather than write one.
+
+The two entities also disagree about which value triggers the delete, and Magento's own admin controllers disagree the same way: the product form substitutes boolean `false` for `varchar`/`text`/`datetime` backends, while the category controller uses `null` for everything. The processor takes that as a parameter rather than assuming.
+
+## Customers are not supported, and cannot be
+
+Not an omission — customer attribute values have no store scope to reset.
+
+`customer_entity_varchar`, `_int`, `_text`, `_datetime` and `_decimal` have **no `store_id` column** at all, unlike their catalog equivalents. `customer_eav_attribute` has no scope flag either. The only per-scope thing in the customer EAV model is `customer_eav_attribute_website`, and that scopes attribute *metadata* — visibility, requiredness, default value, multiline count — not values. The `store_id` on `customer_entity` records which store the account was created in; it does not scope anything.
+
+There is therefore no scoped row to delete, and a customer plugin would be a no-op wearing a useful-looking name.
 
 ## Verified on
 
-Magento Open Source **2.4.8-p5**, PHP 8.4, one website with four store views. Every claim above was executed against a running install: targeted reset of one store view leaving its sibling untouched, repeated resets returning `200` without side effects, ordinary saves unaffected, and both guard paths returning `400`.
+Magento Open Source **2.4.8-p5**, PHP 8.4, one website with four store views. Every claim above was executed against a running install, for **products and categories**, via both a first-class field and an EAV attribute:
+
+- a targeted reset restores inheritance on one store view and leaves its sibling untouched
+- the scoped row is **deleted**, not rewritten to `NULL` — checked with a query that shows `NULL` rows, because `GROUP_CONCAT` silently hides them and will tell you the row is gone when it is not
+- repeated resets return `200` with no further effect
+- ordinary saves are unaffected
+- default scope returns `400`
 
 ## Licence
 
