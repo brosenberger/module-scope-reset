@@ -171,10 +171,35 @@ class CategoryScopeResetTest extends TestCase
      */
     private function writeOverride(int $storeId, string $value): void
     {
-        $category = $this->categoryRepository->get(self::CATEGORY_ID, $storeId);
-        $category->setStoreId($storeId);
-        $category->setData('name', $value);
-        $this->categoryRepository->save($category);
+        $this->inStore($storeId, function () use ($storeId, $value): void {
+            $category = $this->categoryRepository->get(self::CATEGORY_ID, $storeId);
+            $category->setStoreId($storeId);
+            $category->setData('name', $value);
+            $this->categoryRepository->save($category);
+        });
+    }
+
+    /**
+     * CategoryRepository::save() takes its scope from the *current* store
+     * rather than from the entity, so a test has to switch the current store
+     * exactly as a store-code route does. Setting storeId on the object alone
+     * writes to the default scope and the assertion then fails for the wrong
+     * reason.
+     *
+     * @param int $storeId
+     * @param callable $callback
+     * @return void
+     */
+    private function inStore(int $storeId, callable $callback): void
+    {
+        $original = $this->storeManager->getStore()->getId();
+        $this->storeManager->setCurrentStore($storeId);
+
+        try {
+            $callback();
+        } finally {
+            $this->storeManager->setCurrentStore($original);
+        }
     }
 
     /**
@@ -184,10 +209,12 @@ class CategoryScopeResetTest extends TestCase
      */
     private function reset(int $storeId, string $code): void
     {
-        $category = $this->categoryRepository->get(self::CATEGORY_ID, $storeId);
-        $category->setStoreId($storeId);
-        $category->setData($code, self::SENTINEL);
-        $this->categoryRepository->save($category);
+        $this->inStore($storeId, function () use ($storeId, $code): void {
+            $category = $this->categoryRepository->get(self::CATEGORY_ID, $storeId);
+            $category->setStoreId($storeId);
+            $category->setData($code, self::SENTINEL);
+            $this->categoryRepository->save($category);
+        });
     }
 
     /**
