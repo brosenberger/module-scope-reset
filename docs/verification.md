@@ -64,9 +64,15 @@ The category suite pins both of its development failures explicitly, and **passe
 
 Both returned success at the time. Neither would be caught by a unit test, and neither would be caught by asserting on the value.
 
-**The product integration suite is written but skipped by default**, and that is worth stating plainly rather than hiding behind a green run. A product save through the repository at a non-default store scope did not complete in this environment: with one fixture it failed inside the MSI inventory observer, with another inside `ProductRepository::save()` behind a wrapped `The product was unable to be saved`. The same call succeeds over REST on a normal install, which is how the product path was actually verified — so this is an environment limitation, not an untested claim. Set `BROCODE_SCOPERESET_RUN_PRODUCT_INTEGRATION=1` on a clean CI installation to run them.
+Both suites pass: **9 integration tests, 16 assertions**, plus 26 unit tests.
 
-One trap found while getting there, worth its own line: the resource model's `saveAttribute()` opens its **own transaction**, which conflicts with `@magentoDbIsolation` and fails the test with `Rolled back transaction has not been completed correctly` pointing at code unrelated to the assertion. Do not reach for it as a shortcut inside an isolated test.
+Getting the product suite green came down to one thing, and every earlier theory about it was wrong. The failure surfaced as `The product was unable to be saved` — a generic wrapper that names nothing. Unwrapping `getPrevious()` gave the real cause: **`Rolled back transaction has not been completed correctly`**. A product save rolls back a nested transaction internally, and doing that inside the framework's `@magentoDbIsolation` transaction is illegal.
+
+The fix is `@magentoDbIsolation disabled` on that class, relying on the fixture's rollback script for cleanup. Verified by running the full suite twice in a row: state left behind would fail the second run, and it does not.
+
+Two hours went into fixture swapping and store emulation before anyone unwrapped the exception. **When a repository throws a generic "could not save", read `getPrevious()` first** — the wrapper is never the cause, and guessing at fixtures is guessing.
+
+The same trap in a different costume: the resource model's `saveAttribute()` opens its **own** transaction, so reaching for it as a shortcut inside an isolated test fails the same way, pointing at code unrelated to the assertion.
 
 # Running them
 

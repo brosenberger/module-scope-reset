@@ -46,8 +46,14 @@ use PHPUnit\Framework\TestCase;
  * the value back through a loaded model, because a NULL row and an absent row
  * both read back as "empty" — which is exactly how the category bug hid.
  *
+ * DB isolation is deliberately DISABLED here. A product save rolls back a
+ * nested transaction internally, and doing that inside the framework's own
+ * isolation transaction fails with "Rolled back transaction has not been
+ * completed correctly" — an error that names neither the product nor the
+ * scope. The fixture ships a rollback script, so cleanup is handled without it.
+ *
  * @magentoAppIsolation enabled
- * @magentoDbIsolation enabled
+ * @magentoDbIsolation disabled
  */
 class ProductScopeResetTest extends TestCase
 {
@@ -74,24 +80,6 @@ class ProductScopeResetTest extends TestCase
 
     protected function setUp(): void
     {
-        // A product save through the repository at a non-default store scope
-        // does not complete in every environment: depending on which inventory
-        // and url-rewrite modules are installed it fails inside
-        // ProductRepository::save() with a wrapped "The product was unable to
-        // be saved", or inside the MSI inventory observer. Neither is related
-        // to scope resets — the same call succeeds over REST on a normal
-        // install, which is how this module's product path was verified.
-        //
-        // The category suite covers the same mechanism end to end and does
-        // pass here, so nothing about the reset itself is untested. Delete
-        // this guard on a clean CI installation to run these too.
-        if (getenv('BROCODE_SCOPERESET_RUN_PRODUCT_INTEGRATION') !== '1') {
-            $this->markTestSkipped(
-                'Product saves at store scope are unreliable in this environment; '
-                . 'set BROCODE_SCOPERESET_RUN_PRODUCT_INTEGRATION=1 to run them anyway.'
-            );
-        }
-
         $objectManager = Bootstrap::getObjectManager();
         $this->productRepository = $objectManager->get(ProductRepositoryInterface::class);
         $this->storeManager = $objectManager->get(StoreManagerInterface::class);

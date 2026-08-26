@@ -124,7 +124,9 @@ vendor/bin/phpunit -c dev/tests/integration/phpunit.xml.dist \
   app/code/BroCode/ScopeReset/Test/Integration
 ```
 
-Every assertion counts the scoped **row** rather than reading the value back, because an absent row and a `NULL` row both read back as empty — which is precisely how the category bug hid. The category suite pins both of its development failures: the NULL row, and the version that silently did nothing because it was hooked on a repository that discards the entity it is handed.
+**9 tests, 16 assertions, all passing.** Every assertion counts the scoped **row** rather than reading the value back, because an absent row and a `NULL` row both read back as empty — which is precisely how the category bug hid. The category suite pins both of its development failures: the NULL row, and the version that silently did nothing because it was hooked on a repository that discards the entity it is handed.
+
+Note `@magentoDbIsolation disabled` on the product suite: a product save rolls back a nested transaction internally, which is illegal inside the framework's isolation transaction and fails with an error naming neither the product nor the scope.
 
 ## Documentation
 
