@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace BroCode\ScopeReset\Model;
 
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute as CatalogEavAttribute;
 use Magento\Framework\Api\CustomAttributesDataInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Model\AbstractExtensibleModel;
@@ -79,7 +80,7 @@ class ScopeResetProcessor
      * inheritance, and reads back as an empty field with no error anywhere.
      *
      * @param \Magento\Framework\Model\AbstractExtensibleModel $entity
-     * @param \Magento\Eav\Model\Entity\Attribute\AbstractAttribute[] $attributes
+     * @param \Magento\Catalog\Model\ResourceModel\Eav\Attribute[] $attributes
      * @param string $entityLabel Used only in error messages, e.g. "products/{sku}"
      * @param string[] $falseSentinelBackendTypes Backends reset with false rather than null
      * @return void
@@ -116,6 +117,15 @@ class ScopeResetProcessor
             }
 
             $attribute = $attributes[$code];
+
+            // isScopeGlobal() is declared on the catalog attribute rather than
+            // on the EAV base class, so guard instead of assuming: a caller
+            // that ever passes a non-catalog attribute should not fatal here.
+            if (!$attribute instanceof CatalogEavAttribute) {
+                throw new LocalizedException(
+                    __('Attribute %1 is not a catalog attribute and cannot be reset.', $code)
+                );
+            }
 
             if ($attribute->isScopeGlobal()) {
                 throw new LocalizedException(

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+  Standalone unit-test config for BroCode_ScopeReset.
+
+  From a Magento root with the module installed:
+    vendor/bin/phpunit -c app/code/BroCode/ScopeReset/phpunit.xml.dist
+
+  The bootstrap path is relative to a normal Magento installation. Running the
+  module's tests through Magento's own dev/tests/unit suite works too — the
+  suite is named Magento_Unit_Tests_App_Code and already globs app/code.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="../../../../dev/tests/unit/framework/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         failOnWarning="true">
+    <testsuites>
+        <testsuite name="BroCode_ScopeReset Unit Tests">
+            <directory>Test/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory suffix=".php">Model</directory>
+            <directory suffix=".php">Plugin</directory>
+        </include>
+    </source>
+</phpunit>

@@ -43,6 +43,14 @@ Two lessons kept in the module because they generalise:
 - When verifying a **deletion**, use a query that can show a `NULL` row. An aggregate that hides them will confirm whatever you hoped.
 - A result that contradicts a passing check is worth more than the check.
 
+# Unit tests
+
+26 tests, 29 assertions, run against PHP 8.4 / PHPUnit 10.5. They cover what the integration testing above cannot repeat cheaply: the sentinel's strict comparison, all three guards, the per-entity reset value, and detection through both the data bag and the custom-attribute bag.
+
+Two of them exist because the corresponding bug shipped: clearing only the data bag, and applying the product reset rule to a category.
+
+Writing them also surfaced a latent type defect. The processor documented its attribute array as `Magento\Eav\Model\Entity\Attribute\AbstractAttribute[]` and called `isScopeGlobal()` on it — a method declared on `Magento\Catalog\Model\ResourceModel\Eav\Attribute`, not on the EAV base. It never failed at runtime, because products and categories both supply catalog attributes, so only a mock built against the documented type exposed it.
+
 # Not tested
 
 - Bulk and async routes.

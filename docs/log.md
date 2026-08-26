@@ -2,6 +2,12 @@
 
 ## 2026-08-26
 
+### Tests
+
+- 26 unit tests: sentinel strictness, the three guards, the per-entity reset value, detection via both bags
+- Standalone `phpunit.xml.dist` so the suite runs without Magento's own test config
+- Writing them found a real defect: the processor documented its attributes as `Eav\Model\Entity\Attribute\AbstractAttribute` but called `isScopeGlobal()`, which is declared on the *catalog* attribute. It worked at runtime because both entities pass catalog attributes; the type was still wrong. Now typed against `Catalog\Model\ResourceModel\Eav\Attribute` with an explicit guard
+
 ### Categories
 
 - Category support, hooked on `Magento\Catalog\Model\ResourceModel\Category::save()` rather than the repository, which reloads and repopulates the entity and so discards a repository-level plugin's changes
