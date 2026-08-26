@@ -51,6 +51,23 @@ Two of them exist because the corresponding bug shipped: clearing only the data 
 
 Writing them also surfaced a latent type defect. The processor documented its attribute array as `Magento\Eav\Model\Entity\Attribute\AbstractAttribute[]` and called `isScopeGlobal()` on it — a method declared on `Magento\Catalog\Model\ResourceModel\Eav\Attribute`, not on the EAV base. It never failed at runtime, because products and categories both supply catalog attributes, so only a mock built against the documented type exposed it.
 
+# Integration tests
+
+The unit tests prove the processor decides correctly. They cannot prove the decision has the intended effect, because the effect is a deleted database row — so the integration suite asserts on the row itself.
+
+Every assertion **counts rows** rather than reading the value back. An absent row and a `NULL` row both read back as an empty attribute, and that indistinguishability is precisely how the category bug survived its first test.
+
+The category suite pins both of its development failures explicitly:
+
+- `testResetDoesNotLeaveANullRowBehind` — the version that wrote `NULL` instead of deleting
+- `testResetActuallyChangesSomething` — the version that silently did nothing, because it was hooked on a repository that discards the entity handed to it
+
+Both returned success at the time. Neither would be caught by a unit test, and neither would be caught by asserting on the value.
+
+# Running them
+
+The integration framework needs `dev/tests/integration/etc/install-config-mysql.php`. One gotcha on a sandbox without a message broker: the shipped `.dist` config declares `amqp-*` keys, and `setup:install` validates them by *connecting*, so installation fails with `Could not connect to the Amqp Server` before any test runs. Remove those keys — the tests need no broker.
+
 # Not tested
 
 - Bulk and async routes.

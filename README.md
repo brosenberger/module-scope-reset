@@ -108,12 +108,23 @@ Magento Open Source **2.4.8-p5**, PHP 8.4, one website with four store views. Ev
 
 ## Tests
 
+**Unit** — 26 tests, no Magento bootstrap needed beyond the framework autoloader:
+
 ```bash
-# from a Magento root with the module installed
 vendor/bin/phpunit -c app/code/BroCode/ScopeReset/phpunit.xml.dist
 ```
 
-26 unit tests covering the sentinel's strictness, all three guards, the per-entity reset value, and detection through both the data bag and the custom-attribute bag. They deliberately pin the two bugs this module shipped with once: clearing only the data bag, and applying the product reset value to a category.
+They cover the sentinel's strictness, all three guards, the per-entity reset value, and detection through both the data bag and the custom-attribute bag — and deliberately pin two bugs this module had during development: clearing only the data bag, and applying the product reset value to a category.
+
+**Integration** — the tests that matter, because the module's whole job is a side effect on a database row:
+
+```bash
+# needs dev/tests/integration/etc/install-config-mysql.php configured
+vendor/bin/phpunit -c dev/tests/integration/phpunit.xml.dist \
+  app/code/BroCode/ScopeReset/Test/Integration
+```
+
+Every assertion counts the scoped **row** rather than reading the value back, because an absent row and a `NULL` row both read back as empty — which is precisely how the category bug hid. The category suite pins both of its development failures: the NULL row, and the version that silently did nothing because it was hooked on a repository that discards the entity it is handed.
 
 ## Documentation
 
