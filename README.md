@@ -106,6 +106,10 @@ Magento Open Source **2.4.8-p5**, PHP 8.4, one website with four store views. Ev
 - ordinary saves are unaffected
 - default scope returns `400`
 
+## Documentation
+
+An [OKF v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) knowledge bundle lives in [`docs/`](docs/index.md): [usage](docs/usage.md), [mechanism](docs/mechanism.md), [limits](docs/limits.md) and [verification](docs/verification.md).
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
