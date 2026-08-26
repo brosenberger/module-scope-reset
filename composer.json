@@ -1,0 +1,32 @@
+{
+  "name": "brocode/module-scope-reset",
+  "version": "1.0.0",
+  "license": ["MIT"],
+  "authors": [
+    {
+      "name": "Benjamin Rosenberger",
+      "email": "bensch.rosenberger@gmail.com"
+    }
+  ],
+  "description": "Restore store-view attribute inheritance over the Magento 2 REST API by sending the CSV importer's empty-value constant",
+  "type": "magento2-module",
+  "require": {
+    "magento/framework": "*",
+    "magento/module-catalog": "*",
+    "magento/module-import-export": "*"
+  },
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "BroCode\\ScopeReset\\": ""
+    }
+  },
+  "funding": [
+    {
+      "type": "By me a coffee",
+      "url": "https://www.buymeacoffee.com/brosenberger"
+    }
+  ]
+}
