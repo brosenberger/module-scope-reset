@@ -135,3 +135,7 @@ An [OKF v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+Docs, background and related modules: [brocode.at](https://brocode.at/modules/module-scope-reset/)
