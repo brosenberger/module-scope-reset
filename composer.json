@@ -1,6 +1,6 @@
 {
   "name": "brocode/module-scope-reset",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": ["MIT"],
   "authors": [
     {
@@ -9,6 +9,7 @@
     }
   ],
   "description": "Restore store-view attribute inheritance over the Magento 2 REST API by sending the CSV importer's empty-value constant",
+  "homepage": "https://brocode.at/modules/module-scope-reset/",
   "type": "magento2-module",
   "require": {
     "magento/framework": "*",
